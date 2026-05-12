@@ -1,0 +1,26 @@
+
+> cybercrypt@1.0.0 build
+> next build
+
+  ▲ Next.js 14.2.5
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+Failed to compile.
+
+./app/api/admin/challenges/route.ts:12:7
+Type error: No overload matches this call.
+  Overload 1 of 2, '(supabaseUrl: string, supabaseKey: string, options: SupabaseClientOptions<"public"> & { cookieOptions?: CookieOptionsWithName | undefined; cookies: CookieMethodsServerDeprecated; cookieEncoding?: "raw" | ... 1 more ... | undefined; }): SupabaseClient<...>', gave the following error.
+    Type '() => ReadonlyRequestCookies' is not assignable to type 'CookieMethodsServerDeprecated'.
+  Overload 2 of 2, '(supabaseUrl: string, supabaseKey: string, options: SupabaseClientOptions<"public"> & { cookieOptions?: CookieOptionsWithName | undefined; cookies: CookieMethodsServer; cookieEncoding?: "raw" | ... 1 more ... | undefined; }): SupabaseClient<...>', gave the following error.
+    Type '() => ReadonlyRequestCookies' is not assignable to type 'CookieMethodsServer'.
+
+[0m [90m 10 |[39m     process[33m.[39menv[33m.[39m[33mNEXT_PUBLIC_SUPABASE_URL[39m[33m![39m[33m,[39m[0m
+[0m [90m 11 |[39m     process[33m.[39menv[33m.[39m[33mNEXT_PUBLIC_SUPABASE_ANON_KEY[39m[33m![39m[33m,[39m[0m
+[0m[31m[1m>[22m[39m[90m 12 |[39m     { cookies }[0m
+[0m [90m    |[39m       [31m[1m^[22m[39m[0m
+[0m [90m 13 |[39m   )[0m
+[0m [90m 14 |[39m[0m
+[0m [90m 15 |[39m   [36mconst[39m {[0m
