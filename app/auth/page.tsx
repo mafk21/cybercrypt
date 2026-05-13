@@ -8,6 +8,8 @@ import toast from "react-hot-toast";
 
 export default function AuthPage() {
   const [loading, setLoading] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
+  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   const signUp = async (e: any) => {
     e.preventDefault();

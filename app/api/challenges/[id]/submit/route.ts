@@ -48,7 +48,7 @@ export async function POST(
     return NextResponse.json({ error: 'Challenge not found' }, { status: 404 })
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('submissions')
     .select('id')
     .eq('user_id', user.id)
@@ -56,16 +56,24 @@ export async function POST(
     .eq('correct', true)
     .maybeSingle()
 
+  if (existingError) {
+    return NextResponse.json({ error: existingError.message }, { status: 500 })
+  }
+
   if (existing) {
     return NextResponse.json({ error: 'Already solved' }, { status: 409 })
   }
 
-  const { data: attempt } = await supabase
+  const { data: attempt, error: attemptQueryError } = await supabase
     .from('challenge_attempts')
     .select('id,attempt_count,cooldown_until')
     .eq('user_id', user.id)
     .eq('challenge_id', params.id)
     .maybeSingle()
+
+  if (attemptQueryError) {
+    return NextResponse.json({ error: attemptQueryError.message }, { status: 500 })
+  }
 
   const now = new Date()
   if (attempt?.cooldown_until && new Date(attempt.cooldown_until) > now) {
@@ -85,7 +93,7 @@ export async function POST(
   const answer = String(body.answer || '').trim()
   const correct = answer.toLowerCase() === challenge.solution.toLowerCase()
 
-  await supabase.from('submissions').insert({
+  const { error: submissionError } = await supabase.from('submissions').insert({
     user_id: user.id,
     challenge_id: params.id,
     answer,
@@ -94,10 +102,14 @@ export async function POST(
     submitted_at: now.toISOString(),
   })
 
+  if (submissionError) {
+    return NextResponse.json({ error: submissionError.message }, { status: 500 })
+  }
+
   const cooldownUntil = cooldownSeconds > 0 ? new Date(now.getTime() + cooldownSeconds * 1000).toISOString() : null
 
   if (attempt) {
-    await supabase
+    const { error: updateAttemptError } = await supabase
       .from('challenge_attempts')
       .update({
         attempt_count: attemptCount,
@@ -105,33 +117,49 @@ export async function POST(
         cooldown_until: cooldownUntil,
       })
       .eq('id', attempt.id)
+
+    if (updateAttemptError) {
+      return NextResponse.json({ error: updateAttemptError.message }, { status: 500 })
+    }
   } else {
-    await supabase.from('challenge_attempts').insert({
+    const { error: insertAttemptError } = await supabase.from('challenge_attempts').insert({
       user_id: user.id,
       challenge_id: params.id,
       attempt_count: attemptCount,
       last_attempt_at: now.toISOString(),
       cooldown_until: cooldownUntil,
     })
+
+    if (insertAttemptError) {
+      return NextResponse.json({ error: insertAttemptError.message }, { status: 500 })
+    }
   }
 
   if (correct) {
-    const { data: profile } = await supabase
+    const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('points')
       .eq('id', user.id)
       .single()
 
-    await supabase
+    if (profileError) {
+      return NextResponse.json({ error: profileError.message }, { status: 500 })
+    }
+
+    const { error: profileUpdateError } = await supabase
       .from('profiles')
       .update({
-        points: (profile?.points || 0) + challenge.points,
+        points: (profileData?.points || 0) + challenge.points,
       })
       .eq('id', user.id)
+
+    if (profileUpdateError) {
+      return NextResponse.json({ error: profileUpdateError.message }, { status: 500 })
+    }
   }
 
   return NextResponse.json({
     correct,
-    cooldown: cooldownSeconds > 0 ? cooldownSeconds : undefined,
+    cooldown_until: cooldownUntil ?? undefined,
   })
 }

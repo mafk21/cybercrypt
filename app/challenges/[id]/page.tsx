@@ -77,17 +77,32 @@ export default function ChallengePage() {
     const data = await res.json();
     setLoading(false);
 
+    if (!res.ok) {
+      toast.error(data.error || "Submission failed.");
+      if (data.cooldown_until) {
+        const remaining = Math.max(0, Math.ceil((new Date(data.cooldown_until).getTime() - Date.now()) / 1000));
+        setCooldown(remaining);
+      } else if (typeof data.cooldown === "number") {
+        setCooldown(data.cooldown);
+      }
+      return;
+    }
+
     if (data.correct) {
       toast.success("Challenge solved!");
       setChallenge({ ...challenge, solved: true });
       setAnswer("");
-    } else {
-      toast.error("Incorrect answer.");
-      if (data.cooldown_until) {
-        const remaining = Math.max(0, Math.ceil((new Date(data.cooldown_until).getTime() - Date.now()) / 1000));
-        setCooldown(remaining);
-      }
+      return;
     }
+
+    if (data.cooldown_until) {
+      const remaining = Math.max(0, Math.ceil((new Date(data.cooldown_until).getTime() - Date.now()) / 1000));
+      setCooldown(remaining);
+    } else if (typeof data.cooldown === "number") {
+      setCooldown(data.cooldown);
+    }
+
+    toast.error(data.error || "Incorrect answer.");
   };
 
   if (loading) {

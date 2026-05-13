@@ -82,47 +82,58 @@ async function ensureAdminAccounts() {
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  // if "next" is in param, use it as the redirect URL
+  const accessToken = searchParams.get('access_token')
+  const refreshToken = searchParams.get('refresh_token')
   const next = searchParams.get('next') ?? '/dashboard'
 
-  if (code) {
-    let response = NextResponse.next({ request })
+  let responseCookies: Array<{ name: string; value: string; options?: any }> = []
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll()
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set(name, value, options)
-            })
-          },
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
         },
-      }
-    )
-
-    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) {
-      await ensureAdminAccounts()
-
-      const forwardedHost = request.headers.get('x-forwarded-host')
-      const isLocalEnv = process.env.NODE_ENV === 'development'
-      const redirectPath = isAdminEmail(sessionData?.user?.email) ? '/admin' : next
-      const redirectUrl = isLocalEnv
-        ? `${origin}${redirectPath}`
-        : forwardedHost
-        ? `https://${forwardedHost}${redirectPath}`
-        : `${origin}${redirectPath}`
-
-      response = NextResponse.redirect(redirectUrl)
-      return response
+        setAll(cookiesToSet) {
+          responseCookies = cookiesToSet
+        },
+      },
     }
+  )
+
+  let sessionResult: any = null
+  let error: any = null
+
+  if (code) {
+    const result = await supabase.auth.exchangeCodeForSession(code)
+    sessionResult = result.data
+    error = result.error
+  } else if (accessToken && refreshToken) {
+    const result = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+    sessionResult = result.data
+    error = result.error
   }
 
-  // return the user to an error page with instructions
+  if (!error && sessionResult?.session) {
+    await ensureAdminAccounts()
+
+    const forwardedHost = request.headers.get('x-forwarded-host')
+    const isLocalEnv = process.env.NODE_ENV === 'development'
+    const redirectPath = isAdminEmail(sessionResult?.user?.email) ? '/admin' : next
+    const redirectUrl = isLocalEnv
+      ? `${origin}${redirectPath}`
+      : forwardedHost
+      ? `https://${forwardedHost}${redirectPath}`
+      : `${origin}${redirectPath}`
+
+    const redirectResponse = NextResponse.redirect(redirectUrl)
+    responseCookies.forEach(({ name, value, options }) => {
+      redirectResponse.cookies.set(name, value, options)
+    })
+    return redirectResponse
+  }
+
   return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 }

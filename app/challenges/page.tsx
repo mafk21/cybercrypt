@@ -2,6 +2,8 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import ChallengeCard from "@/components/challenge-card";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ChallengesPage() {
   const supabase = createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
@@ -15,6 +17,12 @@ export default async function ChallengesPage() {
     .select("id,title,cipher_type,points,difficulty,active")
     .eq("active", true)
     .order("points", { ascending: false });
+
+  console.log('[challenges/page] active challenges fetch', {
+    userId: user?.id,
+    challengeCount: challenges?.length,
+    error: error?.message,
+  });
 
   if (error) {
     return (

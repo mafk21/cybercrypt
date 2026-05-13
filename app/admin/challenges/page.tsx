@@ -3,6 +3,8 @@ import { isAdminEmail } from "@/lib/admin";
 import { redirect } from "next/navigation";
 import AdminChallengesPanel from "@/components/admin-challenges-panel";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminChallengesPage() {
   const supabase = createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();

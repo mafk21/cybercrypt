@@ -61,18 +61,17 @@ export default function AdminChallengesPanel({ initialChallenges }: { initialCha
     });
 
     if (!data) return;
-    setChallenges((current) => [
-      {
-        id: `${Date.now()}`,
-        title: form.title,
-        cipher_type: form.cipher_type,
-        points: Number(form.points),
-        difficulty: form.difficulty,
-        active: form.active,
-        tags,
-      },
-      ...current,
-    ]);
+    const createdChallenge = data.challenge || {
+      id: `${Date.now()}`,
+      title: form.title,
+      cipher_type: form.cipher_type,
+      points: Number(form.points),
+      difficulty: form.difficulty,
+      active: form.active,
+      tags,
+    }
+
+    setChallenges((current) => [createdChallenge, ...current]);
     setForm(initialFormState);
     setIsCreating(false);
     toast.success("Challenge created.");
