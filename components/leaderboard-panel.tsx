@@ -5,16 +5,16 @@ import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase/client";
 
 export default function LeaderboardPanel({ initialUsers }: { initialUsers: any[] }) {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState(initialUsers || []);
 
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase
-        .from("profiles")
-        .select("id,username,points")
+        .from("leaderboard_cache")
+        .select("user_id,username,points")
         .order("points", { ascending: false });
       setUsers(data || []);
-    }
+    };
 
     load();
 
@@ -25,7 +25,7 @@ export default function LeaderboardPanel({ initialUsers }: { initialUsers: any[]
         {
           event: "*",
           schema: "public",
-          table: "profiles",
+          table: "leaderboard_cache",
         },
         load
       )
@@ -50,7 +50,7 @@ export default function LeaderboardPanel({ initialUsers }: { initialUsers: any[]
         <div className="space-y-3">
           {users.map((user, index) => (
             <motion.div
-              key={user.id}
+              key={user.user_id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}

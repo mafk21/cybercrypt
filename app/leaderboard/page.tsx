@@ -9,10 +9,14 @@ export default async function LeaderboardPage() {
     redirect("/auth");
   }
 
-  const { data: users } = await supabase
-    .from("profiles")
-    .select("id,username,points")
+  const { data: users, error } = await supabase
+    .from("leaderboard_cache")
+    .select("user_id,username,points")
     .order("points", { ascending: false });
+
+  if (error) {
+    console.error('[leaderboard/page] leaderboard_cache fetch failed', error.message)
+  }
 
   return (
     <div className="space-y-8">

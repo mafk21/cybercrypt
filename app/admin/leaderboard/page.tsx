@@ -1,106 +1,42 @@
-"use client";
+import { createServerSupabase } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/admin";
+import { redirect } from "next/navigation";
+import { AdminLeaderboardPanel } from "@/components/admin-leaderboard-panel";
 
-import { useState } from "react";
-import { createBrowserSupabase } from "@/lib/supabase/client";
+export const dynamic = 'force-dynamic';
 
-export function AdminLeaderboardPanel({ initialData }) {
-  const supabase = createBrowserSupabase();
-  const [data, setData] = useState(initialData || []);
-  const [loading, setLoading] = useState(false);
+export default async function AdminLeaderboardPage() {
+  const supabase = createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  // 🟢 UPDATE POINTS (FIXED - prevents affecting all users)
-  const updatePoints = async (userId, newPoints) => {
-    if (!userId) {
-      console.log("Missing userId");
-      return;
-    }
+  if (!user) {
+    redirect('/auth');
+  }
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ points: newPoints })
-      .eq("id", userId); // 🔥 IMPORTANT FIX
+  if (!isAdminEmail(user.email)) {
+    redirect('/404');
+  }
 
-    if (error) {
-      console.log(error);
-      return;
-    }
+  const { data: leaderboard, error } = await supabase
+    .from('leaderboard_cache')
+    .select('user_id,username,points')
+    .order('points', { ascending: false })
+    .limit(100);
 
-    // refresh UI
-    setData((prev) =>
-      prev.map((user) =>
-        user.user_id === userId ? { ...user, points: newPoints } : user
-      )
-    );
-  };
-
-  // 🟢 DELETE USER (FIXED UUID ERROR)
-  const deleteUser = async (userId) => {
-    if (!userId) {
-      console.log("Missing userId (undefined prevented)");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("profiles")
-      .delete()
-      .eq("id", userId); // 🔥 FIXED
-
-    if (error) {
-      console.log(error);
-      return;
-    }
-
-    setData((prev) => prev.filter((u) => u.user_id !== userId));
-  };
+  if (error) {
+    console.error('[admin/leaderboard/page] leaderboard_cache fetch failed', error.message);
+  }
 
   return (
-    <div className="rounded-lg border border-cyan-500/20 p-4">
-      <table className="w-full text-left text-white">
-        <thead>
-          <tr className="text-cyan-300 border-b border-cyan-500/20">
-            <th>Rank</th>
-            <th>Username</th>
-            <th>Points</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+    <main className="space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold text-white">Admin Leaderboard</h1>
+        <p className="max-w-2xl text-sm text-slate-400">
+          Manage the cached leaderboard, edit individual score entries, and refresh rankings.
+        </p>
+      </div>
 
-        <tbody>
-          {data.map((row) => (
-            <tr key={row.user_id} className="border-b border-white/10">
-              <td>{row.rank}</td>
-              <td>{row.username}</td>
-              <td>{row.points}</td>
-
-              <td className="flex gap-2">
-                {/* ➕ Increase points */}
-                <button
-                  onClick={() => updatePoints(row.user_id, row.points + 10)}
-                  className="text-green-400"
-                >
-                  +10
-                </button>
-
-                {/* ➖ Decrease points */}
-                <button
-                  onClick={() => updatePoints(row.user_id, row.points - 10)}
-                  className="text-yellow-400"
-                >
-                  -10
-                </button>
-
-                {/* ❌ Delete user */}
-                <button
-                  onClick={() => deleteUser(row.user_id)}
-                  className="text-red-400"
-                >
-                  Remove
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+      <AdminLeaderboardPanel initialData={leaderboard || []} />
+    </main>
   );
 }

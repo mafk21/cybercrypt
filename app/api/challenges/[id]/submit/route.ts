@@ -135,10 +135,15 @@ export async function POST(
     }
   }
 
+  let updatedPoints: number | undefined = undefined
+
   if (correct) {
-    const { data: profileData, error: profileError } = await supabase
+    const {
+      data: profileData,
+      error: profileError,
+    } = await supabase
       .from('profiles')
-      .select('points')
+      .select('points,username')
       .eq('id', user.id)
       .single()
 
@@ -146,20 +151,37 @@ export async function POST(
       return NextResponse.json({ error: profileError.message }, { status: 500 })
     }
 
+    updatedPoints = (profileData?.points || 0) + challenge.points
+
     const { error: profileUpdateError } = await supabase
       .from('profiles')
       .update({
-        points: (profileData?.points || 0) + challenge.points,
+        points: updatedPoints,
       })
       .eq('id', user.id)
 
     if (profileUpdateError) {
       return NextResponse.json({ error: profileUpdateError.message }, { status: 500 })
     }
+
+    const { error: cacheError } = await supabase.from('leaderboard_cache').upsert(
+      {
+        user_id: user.id,
+        username: profileData?.username || user.email || 'anonymous',
+        points: updatedPoints,
+        updated_at: now.toISOString(),
+      },
+      { onConflict: ['user_id'] }
+    )
+
+    if (cacheError) {
+      return NextResponse.json({ error: cacheError.message }, { status: 500 })
+    }
   }
 
   return NextResponse.json({
     correct,
+    points: updatedPoints,
     cooldown_until: cooldownUntil ?? undefined,
   })
 }
