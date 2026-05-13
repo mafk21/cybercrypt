@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
-// إجبار الصفحة على العمل بشكل ديناميكي لتجنب أخطاء البناء (Build Errors)
+// إجبار الصفحة على العمل بشكل ديناميكي لتجنب أخطاء البناء (Static Prerendering)
 export const dynamic = 'force-dynamic';
 
 export default function ResetPasswordPage() {
@@ -19,27 +19,27 @@ export default function ResetPasswordPage() {
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
-    // التحقق من تطابق كلمات المرور
+    // 1. التحقق من تطابق كلمات المرور
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       setLoading(false);
       return;
     }
 
-    // تحديث كلمة المرور في Supabase
+    // 2. تحديث كلمة المرور عبر Supabase
     const { error } = await supabase.auth.updateUser({
       password: password,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       return toast.error(error.message);
     }
 
+    // 3. النجاح والتوجيه
     toast.success("Password updated successfully");
+    setLoading(false);
     
-    // التوجيه للوحة التحكم بعد النجاح
     setTimeout(() => {
       window.location.href = "/dashboard";
     }, 1500);
@@ -53,14 +53,14 @@ export default function ResetPasswordPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <div className="cyber-card rounded-3xl border border-cyan-500/30 bg-black/80 p-8 shadow-[0_0_70px_rgba(0,255,255,0.08)] backdrop-blur-xl">
+        <div className="cyber-card rounded-3xl border border-cyan-500/30 bg-black/80 p-8 shadow-[0_0_70px_rgba(0,255,255,0.08)] backdrop-blur-md">
           <div className="text-center space-y-6">
             <div>
               <p className="text-sm uppercase tracking-[0.35em] text-cyan-400/70 font-medium mb-2">
-                security system
+                security protocol
               </p>
-              <h1 className="text-3xl font-bold text-white tracking-tight">
-                RESET <span className="text-cyan-500">PASSWORD</span>
+              <h1 className="text-3xl font-bold text-white tracking-tight uppercase">
+                Reset <span className="text-cyan-500">Password</span>
               </h1>
             </div>
 
@@ -109,8 +109,8 @@ export default function ResetPasswordPage() {
               </button>
             </form>
             
-            <p className="text-xs text-cyan-500/50 pt-2">
-              Secure encrypted session initialized
+            <p className="text-[10px] text-cyan-500/40 pt-2 uppercase tracking-widest">
+              End-to-end encrypted session
             </p>
           </div>
         </div>
