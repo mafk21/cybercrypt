@@ -1,7 +1,8 @@
 "use client";
 
-// السطر السحري لمنع Next.js من محاولة بناء الصفحة مسبقاً وفحص المتغيرات
+// إجبار الصفحة على الوضع الديناميكي هو المفتاح لتجاوز أخطاء البناء في Vercel
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -33,7 +34,7 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      // تحديث كلمة المرور في Supabase
+      // التحقق من استجابة Supabase
       const { error } = await supabase.auth.updateUser({
         password: password,
       });
@@ -42,13 +43,13 @@ export default function ResetPasswordPage() {
 
       toast.success("Password updated successfully");
       
-      // التوجيه للوحة التحكم بعد النجاح بفترة بسيطة
+      // توجيه المستخدم بعد النجاح
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1500);
       
     } catch (error: any) {
-      toast.error(error.message || "An error occurred during update");
+      toast.error(error.message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -64,14 +65,14 @@ export default function ResetPasswordPage() {
       >
         <div className="cyber-card rounded-3xl border border-cyan-500/30 bg-black/80 p-8 shadow-[0_0_70px_rgba(0,255,255,0.08)] backdrop-blur-md">
           <div className="text-center space-y-6">
-            <div>
+            <header>
               <p className="text-sm uppercase tracking-[0.35em] text-cyan-400/70 font-medium mb-2">
                 security protocol
               </p>
               <h1 className="text-3xl font-bold text-white tracking-tight uppercase">
                 Reset <span className="text-cyan-500">Password</span>
               </h1>
-            </div>
+            </header>
 
             <form onSubmit={updatePassword} className="text-left space-y-5">
               <div className="space-y-2">
@@ -116,9 +117,9 @@ export default function ResetPasswordPage() {
               </button>
             </form>
             
-            <p className="text-[10px] text-cyan-500/40 pt-2 uppercase tracking-widest">
+            <footer className="text-[10px] text-cyan-500/40 pt-2 uppercase tracking-widest">
               Secure encrypted session initialized
-            </p>
+            </footer>
           </div>
         </div>
       </motion.div>
