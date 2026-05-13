@@ -32,7 +32,7 @@ export type Submission = {
   id: string;
   user_id: string;
   challenge_id: string;
-  answer: string;
+  submitted_answer: string;
   correct: boolean;
   points_awarded: number;
   submitted_at: string;

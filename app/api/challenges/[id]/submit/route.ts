@@ -90,13 +90,13 @@ export async function POST(
     cooldownSeconds = 30
   }
 
-  const answer = String(body.answer || '').trim()
-  const correct = answer.toLowerCase() === challenge.solution.toLowerCase()
+  const submitted_answer = String(body.submitted_answer || '').trim()
+  const correct = submitted_answer.toLowerCase() === challenge.solution.toLowerCase()
 
   const { error: submissionError } = await supabase.from('submissions').insert({
     user_id: user.id,
     challenge_id: params.id,
-    answer,
+    submitted_answer,
     correct,
     points_awarded: correct ? challenge.points : 0,
     submitted_at: now.toISOString(),

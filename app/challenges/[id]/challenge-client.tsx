@@ -24,7 +24,7 @@ interface ChallengeClientProps {
 }
 
 export default function ChallengeClient({ challenge, cooldownUntil }: ChallengeClientProps) {
-  const [answer, setAnswer] = useState("");
+  const [submitted_answer, setsubmitted_answer] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -60,7 +60,7 @@ export default function ChallengeClient({ challenge, cooldownUntil }: ChallengeC
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answer }),
+        body: JSON.stringify({ submitted_answer }),
       }
     );
 
@@ -69,14 +69,14 @@ export default function ChallengeClient({ challenge, cooldownUntil }: ChallengeC
 
     if (data.correct) {
       toast.success("Challenge solved!");
-      setAnswer("");
+      setsubmitted_answer("");
       if (challenge.is_final) {
         router.push("/congratulations");
         return;
       }
       window.location.reload();
     } else {
-      toast.error("Incorrect answer.");
+      toast.error("Incorrect submitted_answer.");
       if (data.cooldown_until) {
         const remaining = Math.max(0, Math.ceil((new Date(data.cooldown_until).getTime() - Date.now()) / 1000));
         setCooldown(remaining);
@@ -120,10 +120,10 @@ export default function ChallengeClient({ challenge, cooldownUntil }: ChallengeC
         ) : (
           <>
             <div className="mb-4">
-              <label className="block mb-2 text-sm uppercase tracking-[0.35em] text-cyan-400/70">Your Answer</label>
+              <label className="block mb-2 text-sm uppercase tracking-[0.35em] text-cyan-400/70">Your submitted_answer</label>
               <input
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
+                value={submitted_answer}
+                onChange={(e) => setsubmitted_answer(e.target.value)}
                 placeholder="Enter decrypted text..."
                 className="w-full bg-black border border-cyan-500 p-3 rounded-lg"
                 disabled={cooldown > 0}
@@ -138,10 +138,10 @@ export default function ChallengeClient({ challenge, cooldownUntil }: ChallengeC
 
             <button
               onClick={submit}
-              disabled={loading || cooldown > 0 || !answer.trim()}
+              disabled={loading || cooldown > 0 || !submitted_answer.trim()}
               className="bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 px-6 py-3 rounded-lg font-semibold transition-colors"
             >
-              {loading ? "Submitting..." : cooldown > 0 ? `Cooldown: ${cooldown}s` : "Submit Answer"}
+              {loading ? "Submitting..." : cooldown > 0 ? `Cooldown: ${cooldown}s` : "Submit submitted_answer"}
             </button>
           </>
         )}

@@ -9,7 +9,7 @@ export default function ChallengePage() {
   const params = useParams();
   const router = useRouter();
   const [challenge, setChallenge] = useState<any>(null);
-  const [answer, setAnswer] = useState("");
+  const [submitted_answer, setsubmitted_answer] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export default function ChallengePage() {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answer }),
+        body: JSON.stringify({ submitted_answer }),
       }
     );
 
@@ -91,7 +91,7 @@ export default function ChallengePage() {
     if (data.correct) {
       toast.success("Challenge solved!");
       setChallenge({ ...challenge, solved: true });
-      setAnswer("");
+      setsubmitted_answer("");
       return;
     }
 
@@ -102,7 +102,7 @@ export default function ChallengePage() {
       setCooldown(data.cooldown);
     }
 
-    toast.error(data.error || "Incorrect answer.");
+    toast.error(data.error || "Incorrect submitted_answer.");
   };
 
   if (loading) {
@@ -216,16 +216,16 @@ export default function ChallengePage() {
         </div>
       ) : (
         <div className="cyber-card rounded-2xl p-6 md:p-8 space-y-6">
-          <h2 className="text-xl font-bold text-white">Submit Your Answer</h2>
+          <h2 className="text-xl font-bold text-white">Submit Your submitted_answer</h2>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-cyan-300 mb-2">
-                Your Decrypted Answer
+                Your Decrypted submitted_answer
               </label>
               <input
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
+                value={submitted_answer}
+                onChange={(e) => setsubmitted_answer(e.target.value)}
                 placeholder="Enter the decrypted plaintext..."
                 className="w-full bg-black/50 border border-cyan-500/50 rounded-lg px-4 py-3 text-white placeholder-cyan-400/50 focus:border-cyan-400 focus:outline-none transition-colors"
                 disabled={cooldown > 0}
@@ -246,7 +246,7 @@ export default function ChallengePage() {
 
             <button
               onClick={submit}
-              disabled={loading || cooldown > 0 || !answer.trim()}
+              disabled={loading || cooldown > 0 || !submitted_answer.trim()}
               className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:bg-gray-600 disabled:cursor-not-allowed px-6 py-3 rounded-lg font-semibold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-black"
             >
               {loading ? (
@@ -257,7 +257,7 @@ export default function ChallengePage() {
               ) : cooldown > 0 ? (
                 `Cooldown: ${cooldown}s`
               ) : (
-                "Submit Answer"
+                "Submit submitted_answer"
               )}
             </button>
           </div>
