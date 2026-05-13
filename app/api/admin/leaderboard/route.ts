@@ -46,27 +46,55 @@ export async function POST(req: Request) {
 
   try {
     if (action === 'update_score') {
-      await service.from('profiles').update({ points: newPoints }).eq('id', userId)
-      await logAction({ newPoints })
+      const score = Number(newPoints)
+      if (!Number.isFinite(score)) {
+        return NextResponse.json({ error: 'Invalid score value' }, { status: 400 })
+      }
+
+      const { error } = await service.from('profiles').update({ points: score }).eq('id', userId)
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+
+      await logAction({ newPoints: score })
     } else if (action === 'remove_user') {
-      await service.from('profiles').delete().eq('id', userId)
+      const { error: deleteSubmissionsError } = await service.from('submissions').delete().eq('user_id', userId)
+      const { error: deleteAttemptsError } = await service.from('challenge_attempts').delete().eq('user_id', userId)
+      const { error: deleteRolesError } = await service.from('user_roles').delete().eq('user_id', userId)
+      const { error: deleteProfileError } = await service.from('profiles').delete().eq('id', userId)
+
+      if (deleteSubmissionsError || deleteAttemptsError || deleteRolesError || deleteProfileError) {
+        return NextResponse.json({ error: (deleteSubmissionsError || deleteAttemptsError || deleteRolesError || deleteProfileError)?.message || 'Failed to remove user' }, { status: 500 })
+      }
+
       await logAction({ removed: true })
     } else if (action === 'recalculate') {
-      // Recalculate points based on correct submissions
-      const { data: users } = await service.from('profiles').select('id')
+      const { data: users, error: usersError } = await service.from('profiles').select('id')
+      if (usersError) {
+        return NextResponse.json({ error: usersError.message }, { status: 500 })
+      }
+
       for (const u of users || []) {
-        const { count } = await service
+        const { data: submissions, error: submissionsError } = await service
           .from('submissions')
-          .select('points', { count: 'exact', head: true })
+          .select('points_awarded')
           .eq('user_id', u.id)
           .eq('correct', true)
-        await service.from('profiles').update({ points: count || 0 }).eq('id', u.id)
+
+        if (submissionsError) {
+          continue
+        }
+
+        const totalPoints = (submissions || []).reduce((sum: number, row: any) => sum + (row.points_awarded || 0), 0)
+        await service.from('profiles').update({ points: totalPoints }).eq('id', u.id)
       }
+
       await logAction({ recalculated: true })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
+    console.error('[admin/leaderboard] action error', error)
     return NextResponse.json({ error: 'Failed to perform action' }, { status: 500 })
   }
 }

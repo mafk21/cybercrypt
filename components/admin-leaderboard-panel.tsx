@@ -17,25 +17,32 @@ export function AdminLeaderboardPanel({ initialData }: { initialData: Leaderboar
   const [newPoints, setNewPoints] = useState('')
 
   const handleAction = async (action: string, userId: string, points?: number) => {
+    if (action === 'update_score' && (points === undefined || !Number.isFinite(points))) {
+      toast.error('Enter a valid score before saving.')
+      return
+    }
+
     const res = await fetch('/api/admin/leaderboard', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, userId, newPoints: points }),
     })
 
-    if (res.ok) {
-      toast.success('Action completed')
-      if (action === 'remove_user') {
-        setUsers(users.filter(u => u.id !== userId))
-      } else if (action === 'update_score') {
-        setUsers(users.map(u => u.id === userId ? { ...u, points: points ?? u.points } : u))
-        setEditing(null)
-      } else if (action === 'recalculate') {
-        // Refresh data
-        window.location.reload()
-      }
-    } else {
-      toast.error('Action failed')
+    const data = await res.json()
+
+    if (!res.ok || data.error) {
+      toast.error(data.error || 'Action failed')
+      return
+    }
+
+    toast.success('Action completed')
+    if (action === 'remove_user') {
+      setUsers(users.filter(u => u.id !== userId))
+    } else if (action === 'update_score') {
+      setUsers(users.map(u => u.id === userId ? { ...u, points: points ?? u.points } : u))
+      setEditing(null)
+    } else if (action === 'recalculate') {
+      window.location.reload()
     }
   }
 

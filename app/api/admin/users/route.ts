@@ -46,7 +46,8 @@ export async function POST(req: Request) {
 
   if (action === 'toggle-role') {
     const targetRole = role === 'admin' ? 'user' : 'admin'
-    const { error } = await service.from('user_roles').upsert({ user_id: userId, role: targetRole })
+    const { error } = await service.from('user_roles')
+      .upsert({ user_id: userId, role: targetRole }, { onConflict: 'user_id' })
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
@@ -61,15 +62,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Cannot delete the current admin account' }, { status: 400 })
     }
 
-    const { error } = await service.from('profiles').delete().eq('id', userId)
+    const { error: deleteSubmissionsError } = await service.from('submissions').delete().eq('user_id', userId)
+    const { error: deleteAttemptsError } = await service.from('challenge_attempts').delete().eq('user_id', userId)
+    const { error: deleteRolesError } = await service.from('user_roles').delete().eq('user_id', userId)
+    const { error: deleteProfileError } = await service.from('profiles').delete().eq('id', userId)
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (deleteSubmissionsError || deleteAttemptsError || deleteRolesError || deleteProfileError) {
+      return NextResponse.json({ error: (deleteSubmissionsError || deleteAttemptsError || deleteRolesError || deleteProfileError)?.message || 'Failed to delete user' }, { status: 500 })
     }
 
-    await service.from('user_roles').delete().eq('user_id', userId)
-    await service.from('submissions').delete().eq('user_id', userId)
-    await service.from('challenge_attempts').delete().eq('user_id', userId)
     await logAction({ deleted: true })
 
     return NextResponse.json({ success: true })

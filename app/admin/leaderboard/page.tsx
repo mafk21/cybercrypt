@@ -3,6 +3,8 @@ import { isAdminEmail } from "@/lib/admin";
 import { redirect } from "next/navigation";
 import { AdminLeaderboardPanel } from "@/components/admin-leaderboard-panel";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminLeaderboardPage() {
   const supabase = createServerSupabase();
 

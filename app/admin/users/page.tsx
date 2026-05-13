@@ -3,6 +3,8 @@ import { isAdminEmail } from "@/lib/admin";
 import { redirect } from "next/navigation";
 import AdminUsersPanel from "@/components/admin-users-panel";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminUsersPage() {
   const supabase = createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
