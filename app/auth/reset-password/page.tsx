@@ -1,12 +1,12 @@
 "use client";
 
+// السطر السحري لمنع Next.js من محاولة بناء الصفحة مسبقاً وفحص المتغيرات
+export const dynamic = 'force-dynamic';
+
 import { useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-
-// إجبار الصفحة على العمل بشكل ديناميكي لتجنب أخطاء البناء (Static Prerendering)
-export const dynamic = 'force-dynamic';
 
 export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
@@ -19,34 +19,43 @@ export default function ResetPasswordPage() {
     const password = formData.get("password") as string;
     const confirmPassword = formData.get("confirmPassword") as string;
 
-    // 1. التحقق من تطابق كلمات المرور
+    // التحقق من تطابق كلمات المرور
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       setLoading(false);
       return;
     }
 
-    // 2. تحديث كلمة المرور عبر Supabase
-    const { error } = await supabase.auth.updateUser({
-      password: password,
-    });
-
-    if (error) {
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
       setLoading(false);
-      return toast.error(error.message);
+      return;
     }
 
-    // 3. النجاح والتوجيه
-    toast.success("Password updated successfully");
-    setLoading(false);
-    
-    setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 1500);
+    try {
+      // تحديث كلمة المرور في Supabase
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+
+      if (error) throw error;
+
+      toast.success("Password updated successfully");
+      
+      // التوجيه للوحة التحكم بعد النجاح بفترة بسيطة
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 1500);
+      
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred during update");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center py-12 px-4">
+    <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center py-12 px-4 bg-black">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -75,7 +84,6 @@ export default function ResetPasswordPage() {
                   placeholder="••••••••"
                   className="w-full bg-black/70 border border-cyan-500/30 p-3 rounded-xl text-white placeholder-cyan-400/30 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition-all"
                   required
-                  minLength={6}
                 />
               </div>
 
@@ -89,7 +97,6 @@ export default function ResetPasswordPage() {
                   placeholder="••••••••"
                   className="w-full bg-black/70 border border-cyan-500/30 p-3 rounded-xl text-white placeholder-cyan-400/30 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition-all"
                   required
-                  minLength={6}
                 />
               </div>
 
@@ -110,7 +117,7 @@ export default function ResetPasswordPage() {
             </form>
             
             <p className="text-[10px] text-cyan-500/40 pt-2 uppercase tracking-widest">
-              End-to-end encrypted session
+              Secure encrypted session initialized
             </p>
           </div>
         </div>
